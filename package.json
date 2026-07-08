@@ -1,0 +1,17 @@
+{
+  "name": "push-pepe-bot",
+  "version": "1.0.0",
+  "description": "Telegram Mini App PUSH PEPE — сбор донатов с целью, топом и админ-панелью",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "telegraf": "^4.16.3",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

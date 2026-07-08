@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PUSH PEPE</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --accent: #34c759;
+    --accent-dark: #22a746;
+    --text: #1c1c28;
+    --text-dim: #8a8a9a;
+    --border: #ecedf3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px;
+    padding-bottom: 90px;
+  }
+  .wrap { max-width: 420px; margin: 0 auto; }
+
+  .card {
+    background: var(--card);
+    border-radius: 22px;
+    padding: 24px 20px;
+    box-shadow: 0 4px 20px rgba(20,20,40,0.06);
+    margin-bottom: 16px;
+  }
+
+  .title-row {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .pepe-emoji { font-size: 42px; }
+  h1 {
+    font-size: 24px;
+    margin: 8px 0 0;
+    letter-spacing: 0.5px;
+  }
+
+  .collected-label {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .collected-amount {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 18px;
+  }
+  .collected-amount span { color: var(--text-dim); font-weight: 500; font-size: 18px; }
+
+  .progress-oval {
+    background: var(--border);
+    border-radius: 999px;
+    height: 26px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.6s ease;
+    width: 0%;
+  }
+  .progress-percent {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+
+  .amount-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .amount-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.15s;
+  }
+  .amount-btn.active, .amount-btn:hover { background: var(--accent); border-color: var(--accent); color: white; }
+
+  input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    margin-bottom: 14px;
+  }
+
+  #ton-connect-button { display: flex; justify-content: center; margin-bottom: 14px; }
+
+  button.send-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    background: var(--accent);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  #status {
+    margin-top: 14px;
+    font-size: 15px;
+    text-align: center;
+    min-height: 22px;
+  }
+  #status.success { color: var(--accent-dark); font-weight: 600; }
+  #status.error { color: #ff5b5b; }
+
+  /* Leaderboard */
+  .leaderboard-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .leaderboard-item:last-child { border-bottom: none; }
+  .lb-rank {
+    width: 28px;
+    font-weight: 700;
+    color: var(--text-dim);
+  }
+  .lb-name { flex: 1; font-weight: 600; padding-left: 4px; }
+  .lb-amount { color: var(--accent-dark); font-weight: 700; }
+  .lb-empty { text-align: center; color: var(--text-dim); padding: 20px 0; font-size: 14px; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card);
+    border-radius: 999px;
+    box-shadow: 0 6px 24px rgba(20,20,40,0.12);
+    display: flex;
+    padding: 6px;
+    gap: 4px;
+    width: calc(100% - 32px);
+    max-width: 388px;
+  }
+  .nav-btn {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  .nav-btn.active { background: var(--accent); color: white; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  h2.section-title { font-size: 18px; margin: 0 0 14px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Главный экран -->
+  <div class="view active" id="view-main">
+    <div class="card">
+      <div class="title-row">
+        <div class="pepe-emoji">🐸</div>
+        <h1>PUSH PEPE</h1>
+      </div>
+
+      <div class="collected-label">Собрано</div>
+      <div class="collected-amount" id="collected-amount">0 <span>/ 0 TON</span></div>
+
+      <div class="progress-oval">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-percent" id="progress-percent">0%</div>
+
+      <div id="ton-connect-button"></div>
+
+      <div class="amount-row" id="amount-row">
+        <div class="amount-btn" data-amount="0.5">0.5 TON</div>
+        <div class="amount-btn" data-amount="1">1 TON</div>
+        <div class="amount-btn" data-amount="5">5 TON</div>
+      </div>
+
+      <input type="number" id="custom-amount" placeholder="Своя сумма (TON)" min="0.01" step="0.01">
+
+      <button class="send-btn" id="send-btn" disabled>Задонатить</button>
+
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <!-- Топ -->
+  <div class="view" id="view-top">
+    <div class="card">
+      <h2 class="section-title">🏆 Топ донатеров</h2>
+      <div id="leaderboard-list">
+        <div class="lb-empty">Загрузка...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="bottom-nav">
+  <div class="nav-btn active" data-view="view-main">Главное меню</div>
+  <div class="nav-btn" data-view="view-top">Топ</div>
+</div>
+
+<script>
+(async function () {
+  const tg = window.Telegram?.WebApp;
+  if (tg) tg.ready();
+
+  const statusEl = document.getElementById('status');
+  const sendBtn = document.getElementById('send-btn');
+  const customAmountInput = document.getElementById('custom-amount');
+  const amountButtons = document.querySelectorAll('.amount-btn');
+  const collectedAmountEl = document.getElementById('collected-amount');
+  const progressFillEl = document.getElementById('progress-fill');
+  const progressPercentEl = document.getElementById('progress-percent');
+  const leaderboardListEl = document.getElementById('leaderboard-list');
+
+  let selectedAmount = null;
+  let config = null;
+
+  // ---- Навигация ----
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.view).classList.add('active');
+      if (btn.dataset.view === 'view-top') loadLeaderboard();
+    });
+  });
+
+  // ---- Статистика / прогресс ----
+  async function loadStats() {
+    try {
+      const res = await fetch('/api/stats');
+      const stats = await res.json();
+      const collected = stats.totalAmount || 0;
+      const goal = stats.goal || 1;
+      const percent = Math.min(100, (collected / goal) * 100);
+
+      collectedAmountEl.innerHTML = `${collected.toFixed(2)} <span>/ ${goal} TON</span>`;
+      progressFillEl.style.width = percent.toFixed(1) + '%';
+      progressPercentEl.textContent = percent.toFixed(1) + '%';
+    } catch (e) {
+      console.warn('Не удалось загрузить статистику', e);
+    }
+  }
+
+  async function loadLeaderboard() {
+    leaderboardListEl.innerHTML = '<div class="lb-empty">Загрузка...</div>';
+    try {
+      const res = await fetch('/api/leaderboard');
+      const data = await res.json();
+      const list = data.leaderboard || [];
+
+      if (list.length === 0) {
+        leaderboardListEl.innerHTML = '<div class="lb-empty">Пока никто не задонатил — будь первым 🐸</div>';
+        return;
+      }
+
+      leaderboardListEl.innerHTML = list.map((item, i) => `
+        <div class="leaderboard-item">
+          <div class="lb-rank">${i + 1}</div>
+          <div class="lb-name">${escapeHtml(item.username || 'без имени')}</div>
+          <div class="lb-amount">${item.amount.toFixed(2)} TON</div>
+        </div>
+      `).join('');
+    } catch (e) {
+      leaderboardListEl.innerHTML = '<div class="lb-empty">Ошибка загрузки</div>';
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  await loadStats();
+
+  // ---- Конфиг сервера ----
+  try {
+    const res = await fetch('/api/config');
+    config = await res.json();
+  } catch (e) {
+    statusEl.textContent = 'Ошибка загрузки конфигурации сервера';
+    statusEl.className = 'error';
+    return;
+  }
+
+  if (!config.tonWalletAddress) {
+    statusEl.textContent = 'Адрес кошелька не настроен на сервере';
+    statusEl.className = 'error';
+    return;
+  }
+
+  const manifestUrl = (config.publicUrl || window.location.origin) + '/tonconnect-manifest.json';
+
+  const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    manifestUrl: manifestUrl,
+    buttonRootId: 'ton-connect-button'
+  });
+
+  function updateSendButtonState() {
+    sendBtn.disabled = !(tonConnectUI.connected && selectedAmount && selectedAmount > 0);
+  }
+
+  tonConnectUI.onStatusChange(() => updateSendButtonState());
+
+  amountButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      amountButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedAmount = parseFloat(btn.dataset.amount);
+      customAmountInput.value = '';
+      updateSendButtonState();
+    });
+  });
+
+  customAmountInput.addEventListener('input', () => {
+    amountButtons.forEach(b => b.classList.remove('active'));
+    selectedAmount = parseFloat(customAmountInput.value);
+    updateSendButtonState();
+  });
+
+  sendBtn.addEventListener('click', async () => {
+    if (!selectedAmount || selectedAmount <= 0) return;
+
+    statusEl.className = '';
+    statusEl.textContent = 'Отправка транзакции...';
+    sendBtn.disabled = true;
+
+    const amountNano = Math.floor(selectedAmount * 1e9).toString();
+
+    const transaction = {
+      validUntil: Math.floor(Date.now() / 1000) + 300,
+      messages: [{ address: config.tonWalletAddress, amount: amountNano }]
+    };
+
+    try {
+      const result = await tonConnectUI.sendTransaction(transaction);
+
+      statusEl.textContent = 'Спасибо за донат бро! 🐸💎';
+      statusEl.className = 'success';
+
+      const initData = tg?.initDataUnsafe;
+      const userId = initData?.user?.id;
+      const username = initData?.user?.username || initData?.user?.first_name;
+
+      if (userId) {
+        const res = await fetch('/api/donate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            username,
+            amountTon: selectedAmount,
+            txHash: result?.boc || null
+          })
+        });
+        const data = await res.json();
+        if (data.stats) {
+          const collected = data.stats.totalAmount || 0;
+          const goal = data.stats.goal || 1;
+          const percent = Math.min(100, (collected / goal) * 100);
+          collectedAmountEl.innerHTML = `${collected.toFixed(2)} <span>/ ${goal} TON</span>`;
+          progressFillEl.style.width = percent.toFixed(1) + '%';
+          progressPercentEl.textContent = percent.toFixed(1) + '%';
+        }
+      }
+
+      if (tg) setTimeout(() => tg.close(), 2500);
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = 'Транзакция не отправлена (отменена или ошибка)';
+      statusEl.className = 'error';
+    } finally {
+      updateSendButtonState();
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
